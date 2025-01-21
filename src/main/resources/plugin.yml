@@ -1,0 +1,8 @@
+name: slotMachinePlugin
+version: '${project.version}'
+main: com.github.klee.slotMachinePlugin.SlotMachinePlugin
+api-version: '1.21'
+commands:
+  slot:
+    description: Main /slot command with subcommands
+    usage: /slot <help|list|analytics|debug|set|delete|itemstack|reload>
