@@ -157,18 +157,84 @@ public class SlotMachineListener implements Listener {
                            String machineId, MachineManager.MachineData machine,
                            SlotConfig config) {
 
-        // spinCost 変数式対応
+        // 1) 金銭コスト
         double cost = parseDoubleExpression(config.getSpinCost(), machine);
+        boolean needMoney = (cost > 0);
 
-        // コスト
-        if (cost > 0 && plugin.getVaultIntegration() != null) {
-            double bal = plugin.getVaultIntegration().getBalance(player);
-            if (bal < cost) {
-                player.sendMessage("§cお金が足りません。");
+        // 2) アイテムコスト
+        SlotConfig.ItemCost itemCost = config.getItemCost(); // { name, amount }
+        boolean needItem = (itemCost != null && itemCost.getName() != null && !itemCost.getName().isEmpty() && itemCost.getAmount() > 0);
+
+        // 2a) 両方設定されているなら両方必要
+        //     片方のみ設定なら、その要件だけでOK
+
+        // 3) チェック: 金が足りるか？
+        if (needMoney) {
+            if (plugin.getVaultIntegration() == null) {
+                player.sendMessage("§cVault連携がありません。お金コストを使用できません。");
                 return;
             }
-            plugin.getVaultIntegration().withdraw(player, cost);
+            double bal = plugin.getVaultIntegration().getBalance(player);
+            if (bal < cost) {
+                player.sendMessage("§cお金が足りません。: ¥" + (int)cost);
+                return;
+            }
         }
+
+        // 4) チェック: アイテムが足りるか？
+        if (needItem) {
+            // itemCostの name がMaterialか itemConfigで宣言した変数か判断
+            String rawName = itemCost.getName();
+            int requiredAmt = itemCost.getAmount();
+
+            // 例: plugin.getItemConfigManager().getItemByKey(rawName) でItemStackを取得 or null
+            ItemStack custom = plugin.getItemConfigManager().getItemByKey(rawName);
+            if (custom != null) {
+                // カスタムアイテム => compare NBT含むかは実装次第
+                int invCount = countItemStack(player, custom);
+                if (invCount < requiredAmt) {
+                    player.sendMessage("§c必要アイテムが足りません: " + rawName + " x" + requiredAmt);
+                    return;
+                }
+            } else {
+                // fallback: Material
+                Material mat = Material.matchMaterial(rawName);
+                if (mat == null) {
+                    player.sendMessage("§citemCostの名前が無効: " + rawName);
+                    return;
+                }
+                int invCount = countMaterial(player, mat);
+                if (invCount < requiredAmt) {
+                    player.sendMessage("§c必要アイテムが足りません: " + mat.name() + " x" + requiredAmt);
+                    return;
+                }
+            }
+        }
+
+        // 5) コストを引く (両方あれば両方)
+        if (needMoney) {
+            plugin.getVaultIntegration().withdraw(player, cost);
+            player.sendMessage("§e" + (int)cost + "¥を支払いました。");
+        }
+        if (needItem) {
+            String rawName = itemCost.getName();
+            int requiredAmt = itemCost.getAmount();
+
+            ItemStack custom = plugin.getItemConfigManager().getItemByKey(rawName);
+            if (custom != null) {
+                removeItemStack(player, custom, requiredAmt);
+                player.sendMessage("§e"+ rawName +" x"+ requiredAmt +" を支払いました。");
+            } else {
+                Material mat = Material.matchMaterial(rawName);
+                if (mat == null) {
+                    player.sendMessage("§cアイテムコストの名前が無効(削除失敗): " + rawName);
+                } else {
+                    removeMaterial(player, mat, requiredAmt);
+                    player.sendMessage("§e"+ mat.name() +" x"+ requiredAmt +" を支払いました。");
+                }
+            }
+        }
+
 
         // 最上位eventは毎回実行
         runEventsIfNeeded(machine, config, player, machineId);
@@ -184,7 +250,6 @@ public class SlotMachineListener implements Listener {
             double vol = (sParam.getVolume() > 0) ? sParam.getVolume() : defaultVolume;
             double pitch = (sParam.getPitch() > 0) ? sParam.getPitch() : defaultPitch;
             double rad = ((sParam.getRadius() > 0) || (sParam.getRadius() == -1)) ? sParam.getRadius() : defaultRadius;
-            System.out.println("radius: " + rad);
             playSoundWithRadius(player, buttonBlock, sParam.getType(), vol, pitch, rad);
         }
 
@@ -281,16 +346,69 @@ public class SlotMachineListener implements Listener {
 
         // 時間後 => 順番停止
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            stopFramesOneByOne(player, frames, config, finalItems, tasks, isMiss ? null : ptn, machineId, machine, buttonBlock, useRotatingSound);
+            stopFramesOneByOne(player, frames, config, finalItems, tasks, isMiss ? null :  machineId, machine, buttonBlock, useRotatingSound);
         }, totalShuffleTicks);
     }
 
+    private int countMaterial(Player player, Material mat) {
+        int count=0;
+        for(ItemStack invItem : player.getInventory().getContents()){
+            if(invItem!=null && invItem.getType()==mat){
+                count+= invItem.getAmount();
+            }
+        }
+        return count;
+    }
+
+    /**
+     * 指定数だけ Material mat を削除
+     */
+    private void removeMaterial(Player player, Material mat, int required) {
+        int remain= required;
+        for(int i=0; i< player.getInventory().getSize(); i++){
+            ItemStack slot = player.getInventory().getItem(i);
+            if(slot!=null && slot.getType()==mat){
+                if(slot.getAmount() <= remain){
+                    remain -= slot.getAmount();
+                    player.getInventory().setItem(i,null);
+                    if(remain<=0) break;
+                } else {
+                    slot.setAmount(slot.getAmount()- remain);
+                    break;
+                }
+            }
+        }
+    }
+    private int countItemStack(Player player, ItemStack custom) {
+        int count=0;
+        for(ItemStack invItem : player.getInventory().getContents()){
+            if(invItem!=null && invItem.isSimilar(custom)){
+                count+= invItem.getAmount();
+            }
+        }
+        return count;
+    }
+    private void removeItemStack(Player player, ItemStack custom, int required) {
+        int remain= required;
+        for(int i=0; i< player.getInventory().getSize(); i++){
+            ItemStack slot = player.getInventory().getItem(i);
+            if(slot!=null && slot.isSimilar(custom)){
+                if(slot.getAmount() <= remain){
+                    remain -= slot.getAmount();
+                    player.getInventory().setItem(i,null);
+                    if(remain<=0) break;
+                } else {
+                    slot.setAmount(slot.getAmount()- remain);
+                    break;
+                }
+            }
+        }
+    }
     private void stopFramesOneByOne(Player player,
                                     List<ItemFrame> frames,
                                     SlotConfig config,
                                     List<String> finalItems,
                                     List<Integer> shuffleTasks,
-                                    SlotConfig.PatternConfig pattern,
                                     String machineId,
                                     MachineManager.MachineData machine,
                                     Block buttonBlock,
@@ -630,7 +748,6 @@ public class SlotMachineListener implements Listener {
         if (next != null && !next.isEmpty()) {
             machine.setSlotConfigName(next);
             MachineManager.saveAllMachines();
-            plugin.getLogger().info("[SlotSwitch] => " + next);
         }
     }
 
@@ -703,7 +820,6 @@ public class SlotMachineListener implements Listener {
                 // ★ 報酬(複数対応) → giveReward
                 //   例: evt.getRewards() が List<Reward>
                 for (SlotConfig.Reward rw : evt.getRewards()) {
-                    System.out.println("Reward: " + rw);
                     giveReward(player, machine, rw,machineId);
                 }
 
@@ -711,7 +827,6 @@ public class SlotMachineListener implements Listener {
                 if (evt.getNextSlotOnWin() != null && !evt.getNextSlotOnWin().isEmpty()) {
                     machine.setSlotConfigName(evt.getNextSlotOnWin());
                     MachineManager.saveAllMachines();
-                    plugin.getLogger().info("[EventSwitch] => " + evt.getNextSlotOnWin());
                 }
             }
         }
@@ -756,7 +871,6 @@ public class SlotMachineListener implements Listener {
 
                 // ★ 報酬(複数) → giveReward
                 for (SlotConfig.Reward rw : evt.getRewards()) {
-                    System.out.println("Reward: " + rw.getValue());
                     giveReward(player, machine, rw,machineId);
                 }
 
@@ -764,7 +878,6 @@ public class SlotMachineListener implements Listener {
                 if (evt.getNextSlotOnWin() != null && !evt.getNextSlotOnWin().isEmpty()) {
                     machine.setSlotConfigName(evt.getNextSlotOnWin());
                     MachineManager.saveAllMachines();
-                    plugin.getLogger().info("[PatternEventSwitch] => " + evt.getNextSlotOnWin());
                 }
             }
         }
@@ -1101,8 +1214,6 @@ public class SlotMachineListener implements Listener {
             return result; // スイッチ(ボタン)でない
         }
 
-        // 取り付けられている面(CEILING, FLOOR, WALL)
-        FaceAttachable.AttachedFace face = sw.getAttachedFace();
         // ボタンが向いている方向 (壁なら NORTH/EAST/SOUTH/WEST、天井=DOWN、床=UP)
         BlockFace facing = sw.getFacing();
 

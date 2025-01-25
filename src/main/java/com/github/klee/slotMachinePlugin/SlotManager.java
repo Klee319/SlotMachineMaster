@@ -27,8 +27,12 @@ public class SlotManager {
 
         File folder = new File(plugin.getDataFolder(), "slotConfigs");
         if (!folder.exists()) {
-            folder.mkdirs();
-            return;
+            if(folder.mkdirs()) {
+                plugin.getLogger().info("[SlotManager] slotConfigs フォルダを作成しました。");
+            } else {
+                plugin.getLogger().warning("[SlotManager] slotConfigs フォルダの作成に失敗しました。");
+                return;
+            }
         }
 
         // ディレクトリ再帰
@@ -60,7 +64,6 @@ public class SlotManager {
                         SlotConfig cfg = gson.fromJson(content, SlotConfig.class);
                         if (cfg != null) {
                             cacheMap.put(relativePath, cfg);
-                            plugin.getLogger().info("スロット設定を読み込み: " + relativePath + " from " + f.getName());
                         }
                     } catch (IOException e) {
                         plugin.getLogger().warning("設定ファイル読み込みエラー: " + f.getName());
