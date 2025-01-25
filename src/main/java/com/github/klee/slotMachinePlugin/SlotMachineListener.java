@@ -214,7 +214,7 @@ public class SlotMachineListener implements Listener {
         // 5) コストを引く (両方あれば両方)
         if (needMoney) {
             plugin.getVaultIntegration().withdraw(player, cost);
-            player.sendMessage("§e" + (int)cost + "¥を支払いました。");
+            player.sendMessage("§e¥" + (int)cost + "を支払いました。");
         }
         if (needItem) {
             String rawName = itemCost.getName();
