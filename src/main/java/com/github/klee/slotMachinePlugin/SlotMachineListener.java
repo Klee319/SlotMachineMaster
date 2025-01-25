@@ -171,12 +171,12 @@ public class SlotMachineListener implements Listener {
         // 3) チェック: 金が足りるか？
         if (needMoney) {
             if (plugin.getVaultIntegration() == null) {
-                player.sendMessage("§cVault連携がありません。お金コストを使用できません。");
+                player.sendMessage("§cVault連携がありません。お金を使用できません。");
                 return;
             }
             double bal = plugin.getVaultIntegration().getBalance(player);
             if (bal < cost) {
-                player.sendMessage("§cお金が足りません。: ¥" + (int)cost);
+                player.sendMessage("§cお金が足りません。: ¥ " + (int)cost);
                 return;
             }
         }
@@ -214,7 +214,7 @@ public class SlotMachineListener implements Listener {
         // 5) コストを引く (両方あれば両方)
         if (needMoney) {
             plugin.getVaultIntegration().withdraw(player, cost);
-            player.sendMessage("§e¥" + (int)cost + "を支払いました。");
+            player.sendMessage("§e¥ " + (int)cost + "を支払いました。");
         }
         if (needItem) {
             String rawName = itemCost.getName();
