@@ -1,6 +1,8 @@
 package com.github.klee.slotMachinePlugin;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * SlotConfig: JSON設定マッピングクラス (最終リファクタリング後)
@@ -23,6 +25,7 @@ public class SlotConfig {
     private String loseMessage;
     private List<ParticleSetting> defaultParticleSettings;
     private DefaultSoundSettings defaultSoundSettings;
+    private ItemCost itemCost;
     private List<PatternConfig> patterns;
 
     private List<VariableDefinition> variables;
@@ -38,8 +41,9 @@ public class SlotConfig {
     // --------------------------------------------------
     // Getters
     // --------------------------------------------------
-    public int getReels() {
-        return reels;
+
+    public ItemCost getItemCost() {
+        return itemCost;
     }
 
     public double getShuffleTime() {
@@ -134,6 +138,13 @@ public class SlotConfig {
                 return radius;
             }
         }
+    }
+    public static class ItemCost {
+        private String name;   // itemConfigのキー or Bukkit Material名
+        private int amount;    // 必要数
+
+        public String getName() { return name; }
+        public int getAmount() { return amount; }
     }
 
     //================================================
@@ -303,10 +314,7 @@ public class SlotConfig {
         }
 
         public List<Reward> getRewards() {
-            if (rewards != null) {
-                return rewards;
-            }
-            return java.util.Collections.emptyList(); // null回避
+            return Objects.requireNonNullElse(rewards, Collections.emptyList());
         }
 
         public String getNextSlotOnWin() {

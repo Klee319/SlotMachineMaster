@@ -28,8 +28,12 @@ public class ItemConfigManager {
         globalItemMap.clear();
         File folder = new File(plugin.getDataFolder(), "itemConfigs");
         if (!folder.exists()) {
-            folder.mkdirs();
-            return;
+            if(folder.mkdirs()) {
+                plugin.getLogger().info("[SlotManager] slotConfigs フォルダを作成しました。");
+            } else {
+                plugin.getLogger().warning("[SlotManager] slotConfigs フォルダの作成に失敗しました。");
+                return;
+            }
         }
         loadRecursively(folder);
         plugin.getLogger().info("[ItemConfigManager] 全ItemConfigsを読み込み完了。合計: " + globalItemMap.size() + "件");
@@ -58,7 +62,6 @@ public class ItemConfigManager {
                             try {
                                 ItemStack is = ItemStackUtil.itemFromBase64(base64);
                                 globalItemMap.put(keyName, is);
-                                plugin.getLogger().info("[ItemConfig] '" + keyName + "' をBase64から復元完了");
                             } catch (Exception ex) {
                                 plugin.getLogger().warning("[ItemConfig] '" + keyName + "' の復元失敗: " + ex.getMessage());
                             }
@@ -75,7 +78,4 @@ public class ItemConfigManager {
         return globalItemMap.get(varName);
     }
 
-    public Map<String, ItemStack> getGlobalItemMap() {
-        return globalItemMap;
-    }
 }
