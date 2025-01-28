@@ -205,8 +205,6 @@ public class DebugSlotCommand implements CommandExecutor {
 
             // 回転終了後に stock を machine に同期
             syncStockToMachine(machine);
-            System.out.println(configVarCache);
-            System.out.println("stock="+machine.getStock());
         }
 
         double paybackRate = (totalCost>0)? (this.totalMoneyGain / totalCost)*100 : 0;
