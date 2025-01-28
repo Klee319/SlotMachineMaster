@@ -957,14 +957,12 @@ public class SlotMachineListener implements Listener {
             // stock を整数扱いする例
             int s = (int) newVal;
             machine.setStock(s);
-            plugin.getLogger().info("[applyVarCalc] stock => " + s);
         } else {
             // 通常変数
             if (!varMap.containsKey(varName)) {
                 varMap.put(varName, 0.0);
             }
             varMap.put(varName, newVal);
-            plugin.getLogger().info("[applyVarCalc] " + varName + " => " + newVal);
         }
     }
 
