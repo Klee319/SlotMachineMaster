@@ -39,16 +39,16 @@ public class SlotMachineListener implements Listener {
 
     static {
         OFFSET_MAP.put("WALL_NORTH", new OffsetDefinition(
-                List.of(new BlockPos(-1, 1, 1), new BlockPos(0, 1, 1), new BlockPos(1, 1, 1))
+                List.of(new BlockPos(1, 1, 1), new BlockPos(0, 1, 1), new BlockPos(-1, 1, 1))
         ));
         OFFSET_MAP.put("WALL_SOUTH", new OffsetDefinition(
-                List.of(new BlockPos(1, 1, -1), new BlockPos(0, 1, -1), new BlockPos(-1, 1, -1))
+                List.of(new BlockPos(-1, 1, -1), new BlockPos(0, 1, -1), new BlockPos(1, 1, -1))
         ));
         OFFSET_MAP.put("WALL_EAST", new OffsetDefinition(
-                List.of(new BlockPos(-1, 1, -1), new BlockPos(-1, 1, 0), new BlockPos(-1, 1, 1))
+                List.of(new BlockPos(-1, 1, 1), new BlockPos(-1, 1, 0), new BlockPos(-1, 1, -1))
         ));
         OFFSET_MAP.put("WALL_WEST", new OffsetDefinition(
-                List.of(new BlockPos(1, 1, 1), new BlockPos(1, 1, 0), new BlockPos(1, 1, -1))
+                List.of(new BlockPos(1, 1, -1), new BlockPos(1, 1, 0), new BlockPos(1, 1, 1))
 
         ));
     }
@@ -176,7 +176,7 @@ public class SlotMachineListener implements Listener {
             }
             double bal = plugin.getVaultIntegration().getBalance(player);
             if (bal < cost) {
-                player.sendMessage("§cお金が足りません。: ¥ " + (int)cost);
+                player.sendMessage("§cお金が足りません。: ¥" + (int)cost);
                 return;
             }
         }
@@ -193,7 +193,7 @@ public class SlotMachineListener implements Listener {
                 // カスタムアイテム => compare NBT含むかは実装次第
                 int invCount = countItemStack(player, custom);
                 if (invCount < requiredAmt) {
-                    player.sendMessage("§c必要アイテムが足りません: " + rawName + " x" + requiredAmt);
+                    player.sendMessage("§c必要アイテムが足りません: " + rawName + " x" + requiredAmt+"個");
                     return;
                 }
             } else {
@@ -205,7 +205,7 @@ public class SlotMachineListener implements Listener {
                 }
                 int invCount = countMaterial(player, mat);
                 if (invCount < requiredAmt) {
-                    player.sendMessage("§c必要アイテムが足りません: " + mat.name() + " x" + requiredAmt);
+                    player.sendMessage("§c必要アイテムが足りません: " + mat.name() + " x" + requiredAmt+"個");
                     return;
                 }
             }
@@ -214,7 +214,7 @@ public class SlotMachineListener implements Listener {
         // 5) コストを引く (両方あれば両方)
         if (needMoney) {
             plugin.getVaultIntegration().withdraw(player, cost);
-            player.sendMessage("§e¥ " + (int)cost + "を支払いました。");
+            //player.sendMessage("§e¥" + (int)cost + "を支払いました。");
         }
         if (needItem) {
             String rawName = itemCost.getName();
@@ -223,14 +223,14 @@ public class SlotMachineListener implements Listener {
             ItemStack custom = plugin.getItemConfigManager().getItemByKey(rawName);
             if (custom != null) {
                 removeItemStack(player, custom, requiredAmt);
-                player.sendMessage("§e"+ rawName +" x"+ requiredAmt +" を支払いました。");
+                //player.sendMessage("§e"+ rawName +" x"+ requiredAmt +"個を支払いました。");
             } else {
                 Material mat = Material.matchMaterial(rawName);
                 if (mat == null) {
-                    player.sendMessage("§cアイテムコストの名前が無効(削除失敗): " + rawName);
+                    player.sendMessage("§cアイテムの名前が無効: " + rawName);
                 } else {
                     removeMaterial(player, mat, requiredAmt);
-                    player.sendMessage("§e"+ mat.name() +" x"+ requiredAmt +" を支払いました。");
+                    //player.sendMessage("§e"+ mat.name() +" x"+ requiredAmt +"個を支払いました。");
                 }
             }
         }
@@ -328,7 +328,7 @@ public class SlotMachineListener implements Listener {
                 if (useRotatingSound) {
                     var sParams = config.getDefaultSoundSettings().getRotatingSound();
                     String soundKey = sParams.getType();
-                    double vol = (sParams.getVolume() > 0) ? sParams.getVolume() : defaultVolume;
+                    double vol = (sParams.getVolume() > 0) ? sParams.getVolume() : 0.3F;
                     double pitch = (sParams.getPitch() > 0) ? sParams.getPitch() : defaultPitch;
                     double rad = (sParams.getRadius() != 0) ? sParams.getRadius() : defaultRadius;
                     playSoundWithRadius(player, buttonBlock, soundKey, vol, pitch, rad);
@@ -346,7 +346,7 @@ public class SlotMachineListener implements Listener {
 
         // 時間後 => 順番停止
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            stopFramesOneByOne(player, frames, config, finalItems, tasks, isMiss ? null :  machineId, machine, buttonBlock, useRotatingSound);
+            stopFramesOneByOne(player, frames, config, finalItems, tasks, machineId, machine, buttonBlock, useRotatingSound);
         }, totalShuffleTicks);
     }
 
@@ -457,7 +457,6 @@ public class SlotMachineListener implements Listener {
                     // finish
                     finishSlot(player, machineId, machine, config, buttonBlock);
                     endSpin(player.getUniqueId(), machineId);
-
                     // ★ 回転終了後に setSilent(false) して通常音に戻す
                     if (useRotatingSound) {
                         for (ItemFrame ff : frames) {
@@ -518,7 +517,7 @@ public class SlotMachineListener implements Listener {
         if (machine != null && machine.getVariables() != null) {
             for (Map.Entry<String, Double> e : machine.getVariables().entrySet()) {
                 String placeholder = "<" + e.getKey() + ">";
-                text = text.replace(placeholder, String.valueOf(e.getValue()));
+                text = text.replace(placeholder, String.valueOf(e.getValue().longValue()));
             }
         }
 
@@ -707,7 +706,7 @@ public class SlotMachineListener implements Listener {
 
         // (2) pattern.winMessage で "<>" を moneyWon に置き換え
         if (pattern.getWinMessage() != null && !pattern.getWinMessage().isEmpty()) {
-            String localMsg = pattern.getWinMessage().replace("<profit>", String.valueOf(moneyWon));
+            String localMsg = pattern.getWinMessage().replace("<profit>", String.valueOf((int)moneyWon));
             // カラーコード対応など行うなら:
             localMsg = translateColorAndNewline(localMsg, machine);
             player.sendMessage(localMsg);
@@ -759,7 +758,7 @@ public class SlotMachineListener implements Listener {
         if (rawMsg == null) rawMsg = "";
         rawMsg = rawMsg
                 .replace("<playerName>", winner.getName())
-                .replace("<profit>", String.valueOf(moneyWon))
+                .replace("<profit>", String.valueOf((int)moneyWon))
                 .replace("<slotName>", machine.getSlotConfigName());
         String finalMsg = translateColorAndNewline(rawMsg, machine);
 
@@ -887,46 +886,42 @@ public class SlotMachineListener implements Listener {
 
     private boolean checkCondition(String cond, MachineManager.MachineData machine) {
         if (cond == null || cond.isEmpty()) return false;
-        // "1" → 常にtrue
+        // "1" → 常に true
         if (cond.equals("1")) return true;
 
         // 1) 変数置換
         Map<String, Double> varMap = machine.getVariables();
         if (varMap == null) varMap = new HashMap<>();
 
-        // 変数を [varName -> 値] で置換
         String replaced = cond;
         for (var entry : varMap.entrySet()) {
             String varName = entry.getKey();
             double varVal = entry.getValue();
-            // <変数名> → varVal
+            // \b<varName>\b を数値文字列に置換
             replaced = replaced.replaceAll("\\b" + varName + "\\b", String.valueOf(varVal));
         }
 
         // 2) stock 置換
-        //   condition内に "stock" があれば machineのstockを挿入
         replaced = replaced.replaceAll("\\bstock\\b", String.valueOf(machine.getStock()));
-
-        // 3) 数式として eval
+        // 3) 数式(＋論理演算)として eval
         try {
             double val = ExpressionParser.eval(replaced);
-            // 0 なら false, 非0なら true とみなす例
-            return (Math.abs(val) > 0.000001);
+            // 評価結果が 0 なら false, それ以外は true
+            return (Math.abs(val) > 1.0e-7);
         } catch (Exception e) {
             plugin.getLogger().warning("[checkCondition] eval error: " + e.getMessage());
             return false;
         }
     }
 
+
     private void applyVarCalc(String expr, MachineManager.MachineData machine) {
         // exprに "varName=式" の形が必須
         if (expr == null || !expr.contains("=")) {
-            plugin.getLogger().warning("[applyVarCalc] no '=' in expr: " + expr);
             return;
         }
         String[] sp = expr.split("=");
         if (sp.length != 2) {
-            plugin.getLogger().warning("[applyVarCalc] invalid varCalc: " + expr);
             return;
         }
         String varName = sp[0].trim();  // 左辺
@@ -1190,7 +1185,8 @@ public class SlotMachineListener implements Listener {
         if (sign == null) return;
         var md = MachineManager.getMachine(machineId);
         if (md == null) return;
-        sign.setLine(0, "§eStock: " + md.getStock());
+        sign.setLine(0, "§b["+machineId+"]");
+        sign.setLine(2, "§eStock: " + md.getStock());
         sign.update(true, false);
     }
 
