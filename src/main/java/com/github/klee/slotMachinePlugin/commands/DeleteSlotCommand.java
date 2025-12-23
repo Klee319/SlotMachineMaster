@@ -31,7 +31,7 @@ public class DeleteSlotCommand implements CommandExecutor {
             return true;
         }
         if (args.length < 1) {
-            player.sendMessage("§c/deleteslot <machineId>");
+            player.sendMessage("§c/slot delete <machineId>");
             return true;
         }
         String machineId = args[0];

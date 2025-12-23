@@ -37,7 +37,7 @@ public class SetSlotButtonCommand implements CommandExecutor {
             return true;
         }
         if (args.length < 2) {
-            player.sendMessage("§c/setslotbutton <machineId> <configPath>");
+            player.sendMessage("§c/slot set <machineId> <configPath>");
             return true;
         }
         String machineId = args[0];

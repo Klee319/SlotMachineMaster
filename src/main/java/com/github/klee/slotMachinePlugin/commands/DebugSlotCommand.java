@@ -96,8 +96,13 @@ public class DebugSlotCommand implements CommandExecutor {
         // machineのstockをキャッシュ
         configVarCache.put("stock", (double)debugData.getStock());
 
-        // シミュレーション
-        doDebugSimulate(player, debugData, config, count);
+        // 非同期でシミュレーション実行
+        player.sendMessage("§e==== DebugSlot Start: machineId=" + machineId + " count=" + count + " ====");
+        player.sendMessage("§7非同期で実行中...");
+
+        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            doDebugSimulate(player, debugData, config, count);
+        });
 
         return true;
     }
@@ -116,13 +121,18 @@ public class DebugSlotCommand implements CommandExecutor {
     }
 
     private void doDebugSimulate(Player player, MachineData machine, SlotConfig config, int count) {
-        player.sendMessage("§e==== DebugSlot Start: machineId="+ machine.getSlotConfigName()
-                + " count="+count+" ====");
-
         double totalCost=0.0;
         Map<String,Integer> itemGainMap = new HashMap<>();
 
+        int progressStep = Math.max(1, count / 10); // 10%ごとに進捗表示
+        long startTime = System.currentTimeMillis();
+
         for(int i=0; i<count; i++){
+            // 進捗表示 (10%ごと)
+            if (i > 0 && i % progressStep == 0) {
+                int percent = (int) ((i * 100L) / count);
+                player.sendMessage("§7進捗: " + percent + "% (" + i + "/" + count + ")");
+            }
             // スロット切り替えの可能性があるので、その都度取得
             SlotConfig currentCfg = plugin.getSlotManager().getSlotConfig(machine.getSlotConfigName());
             if(currentCfg==null){
@@ -208,10 +218,13 @@ public class DebugSlotCommand implements CommandExecutor {
         }
 
         double paybackRate = (totalCost>0)? (this.totalMoneyGain / totalCost)*100 : 0;
+        long elapsedTime = System.currentTimeMillis() - startTime;
 
         // 結果表示
+        player.sendMessage("§a進捗: 100% 完了!");
         player.sendMessage("§7[Debug Result]");
         player.sendMessage(" §7回数: "+count);
+        player.sendMessage(" §7処理時間: " + String.format("%.2f", elapsedTime / 1000.0) + " 秒");
         player.sendMessage(" §7出金合計(コスト): "+totalCost);
         player.sendMessage(" §7お金の入金合計: "+this.totalMoneyGain);
         player.sendMessage(" §7還元率(お金のみ): "+String.format("%.2f", paybackRate)+" %");
