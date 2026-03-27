@@ -131,8 +131,19 @@ public class SlotCommand implements CommandExecutor, TabCompleter {
                 return partialMatch(args[1], new ArrayList<>(MachineManager.getAllMachines().keySet()));
             }
             if (args.length == 3) {
-                // configPath => "[configPath]"
-                return Collections.singletonList("[configPath]");
+                // configPath => entryFileNamesに一致するキーのみサジェスト
+                List<String> entryNames = plugin.getPluginConfig().getEntryFileNames();
+                List<String> candidates = new ArrayList<>();
+                for (String key : plugin.getSlotManager().getSlotConfigKeys()) {
+                    String fileName = key.contains("/") ? key.substring(key.lastIndexOf('/') + 1) : key;
+                    for (String entry : entryNames) {
+                        if (fileName.equalsIgnoreCase(entry)) {
+                            candidates.add(key);
+                            break;
+                        }
+                    }
+                }
+                return partialMatch(args[2], candidates);
             }
             return Collections.emptyList();
 

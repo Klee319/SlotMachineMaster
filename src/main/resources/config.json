@@ -1,0 +1,9 @@
+{
+  "entryFileNames": ["main", "normal"],
+  "defaultSoundSettings": {
+    "startSound": { "type": "minecraft:block.note_block.pling", "volume": 0.5, "pitch": 1.0, "radius": 10 },
+    "rotatingSound": { "type": "", "volume": 0.3, "pitch": 1.0, "radius": 10 },
+    "reelStopSound": { "type": "minecraft:block.note_block.bass", "volume": 0.5, "pitch": 1.0, "radius": 10 },
+    "endLoseSound": { "type": "minecraft:block.note_block.didgeridoo", "volume": 0.5, "pitch": 1.0, "radius": 10 }
+  }
+}

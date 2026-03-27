@@ -2,14 +2,18 @@ package com.github.klee.slotMachinePlugin;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.stream.JsonReader;
 import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 
 public class SlotManager {
@@ -55,13 +59,10 @@ public class SlotManager {
                         // 1) ファイル文字列読み込み
                         String content = Files.readString(f.toPath(), StandardCharsets.UTF_8);
 
-                        // 2) コメント削除 (簡易)
-                        //    行コメント //... と ブロックコメント /* ... */
-                        content = content.replaceAll("//.*", "");
-                        content = content.replaceAll("/\\*.*?\\*/", "");
-
-                        // 3) Gson パース
-                        SlotConfig cfg = gson.fromJson(content, SlotConfig.class);
+                        // 2) Gson lenientモードでパース (// と /* */ コメントをネイティブ処理)
+                        JsonReader reader = new JsonReader(new StringReader(content));
+                        reader.setLenient(true);
+                        SlotConfig cfg = gson.fromJson(reader, SlotConfig.class);
                         if (cfg != null) {
                             cacheMap.put(relativePath, cfg);
                         }
@@ -108,5 +109,9 @@ public class SlotManager {
      */
     public SlotConfig getSlotConfig(String relativePath) {
         return cacheMap.get(relativePath);
+    }
+
+    public Set<String> getSlotConfigKeys() {
+        return Collections.unmodifiableSet(cacheMap.keySet());
     }
 }

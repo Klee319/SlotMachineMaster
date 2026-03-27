@@ -1,0 +1,111 @@
+{
+    "reels": 3,
+    "shuffleTime": 2.5,
+    "spinCost": 400,
+    "spinSpeed": 0.8,
+    "shuffleSpeed": 1.5,
+    "loseStockOperation": "ADD",
+    "loseStockValue": 50,
+    "defaultSoundSettings": {
+        "startSound": {
+            "type": "minecraft:block.note_block.pling"
+        },
+        "reelStopSound": {
+            "type": "minecraft:block.note_block.bass",
+            "volume": 1.0
+        },
+        "endLoseSound": {
+            "type": "minecraft:block.note_block.bell"
+        },
+        "rotatingSound": {
+            "type": "minecraft:block.stone.break"
+        }
+    },
+    "variables": [ 
+        {
+            "varName": "rotateCount", 
+            "initialValue": 0 
+        },
+        {
+            "varName": "HP",
+            "initialValue": 10
+        }
+    ],
+    "event": [ //変数リセット
+        {
+            "condition": "1",
+            "varCalc": "rotateCount=0",
+            "message": "&6&lこの回転で採掘を始めるツルハシが決まる!"
+        },
+        {
+            "condition": "1",
+            "varCalc": "HP=15"
+        },
+        {
+            "condition":"1",
+            "varCalc":"stock=0"
+        }
+    ],
+    "patterns": [
+        //木のツルハシ
+        {
+            "items": [
+                "wooden_pickaxe",
+                "wooden_pickaxe",
+                "wooden_pickaxe"
+            ],
+            "probability": 50,
+            "winMessage": "&f木のツルハシを手に入れた!",
+            "nextSlotOnWin": "mining_slot/wood",
+            "patternSound": {
+                "type": "minecraft:entity.player.levelup"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 50
+        },
+        //石のツルハシ
+        {
+            "items": [
+                "stone_pickaxe",
+                "stone_pickaxe",
+                "stone_pickaxe"
+            ],
+            "probability": 35,
+            "winMessage": "&a石のツルハシを手に入れた!",
+            "nextSlotOnWin": "mining_slot/stone",
+            "patternSound": {
+                "type": "minecraft:entity.player.levelup"
+            }
+        },
+        {
+            "items": [
+                "iron_pickaxe",
+                "iron_pickaxe",
+                "iron_pickaxe"
+            ],
+            "probability": 10,
+            "winMessage": "&b鉄のツルハシを手に入れた!",
+            "nextSlotOnWin": "mining_slot/iron",
+            "patternSound": {
+                "type": "minecraft:entity.player.levelup"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 50
+        },
+        {
+            "items": [
+                "diamond_pickaxe",
+                "diamond_pickaxe",
+                "diamond_pickaxe"
+            ],
+            "probability": 5,
+            "winMessage": "&dなんとダイヤのツルハシを手に入れた!",
+            "nextSlotOnWin": "mining_slot/diamond",
+            "patternSound": {
+                "type": "minecraft:entity.player.levelup"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 50
+        }
+    ]
+}

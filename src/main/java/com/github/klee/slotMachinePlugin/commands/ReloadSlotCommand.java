@@ -7,8 +7,8 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
 /**
- * /slotreload
- * JSONコンフィグを再読み込み
+ * /slot reload
+ * 全設定ファイルを再読み込み
  */
 public class ReloadSlotCommand implements CommandExecutor {
 
@@ -22,12 +22,12 @@ public class ReloadSlotCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-
-        // JSONコンフィグを再読み込み
+        plugin.getPluginConfig().reload();
         slotManager.loadAllSlotConfigs();
+        plugin.getItemConfigManager().loadAllItemConfigs();
 
-        sender.sendMessage("§aスロット設定をリロードしました。");
+        int count = slotManager.getSlotConfigKeys().size();
+        sender.sendMessage("§a設定をリロードしました。 §7(スロット: " + count + "件)");
         return true;
     }
 }
-

@@ -244,7 +244,7 @@ public class SlotMachineListener implements Listener {
 
 
 // startSound
-        var sParam = config.getDefaultSoundSettings().getStartSound();
+        var sParam = (config.getDefaultSoundSettings() != null) ? config.getDefaultSoundSettings().getStartSound() : null;
         if (sParam != null
                 && sParam.getType() != null) {
             double vol = (sParam.getVolume() > 0) ? sParam.getVolume() : defaultVolume;
@@ -567,9 +567,22 @@ public class SlotMachineListener implements Listener {
         double offZ = transformOffset(ps.getOffset(), facing)[2];
 
         if (Objects.equals(ps.getPoint(), "button") || Objects.equals(ps.getPoint(), "BUTTON")|| Objects.equals(ps.getPoint(), "Button")) {
-            // ボタン中心でパーティクルを発生
             Location baseLoc = buttonBlock.getLocation().add(0.5, 0.5, 0.5);
-            // REDSTONE の色指定対応
+            safeSpawnParticle(player.getWorld(), particle, baseLoc, count, offX, offY, offZ, speed, ps);
+        } else if(Objects.equals(ps.getPoint(), "frame")||Objects.equals(ps.getPoint(), "FRAME")||Objects.equals(ps.getPoint(), "Frame")) {
+            for (BlockPos offset : offDef.reelOffsets) {
+                Block target = buttonBlock.getRelative(offset.dx, offset.dy, offset.dz);
+                Location baseLoc = target.getLocation().add(0.5, 0.5, 0.5);
+                safeSpawnParticle(player.getWorld(), particle, baseLoc, count, offX, offY, offZ, speed, ps);
+            }
+        }
+
+    }
+
+    private void safeSpawnParticle(World world, Particle particle, Location loc,
+                                   int count, double offX, double offY, double offZ,
+                                   double speed, SlotConfig.ParticleSetting ps) {
+        try {
             if (particle == Particle.DUST && ps.getColor() != null) {
                 float r = (float) ps.getColor()[0];
                 float g = (float) ps.getColor()[1];
@@ -577,49 +590,22 @@ public class SlotMachineListener implements Listener {
                 Particle.DustOptions dust = new Particle.DustOptions(
                         Color.fromRGB((int) (r * 255), (int) (g * 255), (int) (b * 255)), 1.0F
                 );
-                player.getWorld().spawnParticle(particle,
-                        baseLoc.getX(), baseLoc.getY(), baseLoc.getZ(),
-                        count, offX, offY, offZ, speed, dust
-                );
+                world.spawnParticle(particle, loc.getX(), loc.getY(), loc.getZ(),
+                        count, offX, offY, offZ, speed, dust);
             } else {
-                // 通常パーティクル
-                player.getWorld().spawnParticle(particle,
-                        baseLoc.getX(), baseLoc.getY(), baseLoc.getZ(),
-                        count, offX, offY, offZ, speed
-                );
+                world.spawnParticle(particle, loc.getX(), loc.getY(), loc.getZ(),
+                        count, offX, offY, offZ, speed);
             }
-        } else if(Objects.equals(ps.getPoint(), "frame")||Objects.equals(ps.getPoint(), "FRAME")||Objects.equals(ps.getPoint(), "Frame")) {        // 5) 各オフセット位置のブロック中心付近でパーティクルを発生
-            for (BlockPos offset : offDef.reelOffsets) {
-                // ボタン基準に相対ブロックを取得
-                Block target = buttonBlock.getRelative(offset.dx, offset.dy, offset.dz);
-
-                // ブロックの中心位置 (x+0.5, y+0.5, z+0.5)
-                Location baseLoc = target.getLocation().add(0.5, 0.5, 0.5);
-
-                // REDSTONE の色指定対応
-                if (particle == Particle.DUST && ps.getColor() != null) {
-                    float r = (float) ps.getColor()[0];
-                    float g = (float) ps.getColor()[1];
-                    float b = (float) ps.getColor()[2];
-                    Particle.DustOptions dust = new Particle.DustOptions(
-                            Color.fromRGB((int) (r * 255), (int) (g * 255), (int) (b * 255)), 1.0F
-                    );
-                    player.getWorld().spawnParticle(particle,
-                            baseLoc.getX(), baseLoc.getY(), baseLoc.getZ(),
-                            count, offX, offY, offZ, speed, dust
-                    );
-                } else {
-                    // 通常パーティクル
-                    player.getWorld().spawnParticle(particle,
-                            baseLoc.getX(), baseLoc.getY(), baseLoc.getZ(),
-                            count, offX, offY, offZ, speed
-                    );
-                }
+        } catch (IllegalArgumentException e) {
+            // Paper 1.21+ で一部パーティクルがデータパラメータ必須になった場合のフォールバック
+            try {
+                world.spawnParticle(particle, loc.getX(), loc.getY(), loc.getZ(),
+                        count, offX, offY, offZ, speed, 1.0F);
+            } catch (Exception ignored) {
+                // それでもダメなら無視（パーティクルなしで続行）
             }
         }
-
     }
-// ★ CHANGED CODE END
 
     private Double[] transformOffset(double[] offset,
                                      BlockFace face) {
@@ -903,29 +889,46 @@ public class SlotMachineListener implements Listener {
 
         // 2) stock 置換
         replaced = replaced.replaceAll("\\bstock\\b", String.valueOf(machine.getStock()));
-        // 3) 数式(＋論理演算)として eval
+        // 3) 未解決の変数名を0に置換（変数未初期化対策）
+        replaced = replaced.replaceAll("\\b[a-zA-Z_][a-zA-Z0-9_]*\\b", "0");
+        // 4) 数式(＋論理演算)として eval
         try {
             double val = ExpressionParser.eval(replaced);
-            // 評価結果が 0 なら false, それ以外は true
             return (Math.abs(val) > 1.0e-7);
         } catch (Exception e) {
-            plugin.getLogger().warning("[checkCondition] eval error: " + e.getMessage());
+            plugin.getLogger().warning("[checkCondition] eval error: " + replaced + " => " + e.getMessage());
             return false;
         }
     }
 
 
     private void applyVarCalc(String expr, MachineManager.MachineData machine) {
-        // exprに "varName=式" の形が必須
-        if (expr == null || !expr.contains("=")) {
+        if (expr == null || expr.isEmpty()) return;
+
+        // セミコロン区切りで複数代入に対応 (例: "atStock = atStock + 1; gameCount = 0")
+        String[] statements = expr.split(";");
+        for (String statement : statements) {
+            applySingleVarCalc(statement.trim(), machine);
+        }
+    }
+
+    private void applySingleVarCalc(String expr, MachineManager.MachineData machine) {
+        if (expr == null || expr.isEmpty() || !expr.contains("=")) {
             return;
         }
-        String[] sp = expr.split("=");
-        if (sp.length != 2) {
-            return;
-        }
-        String varName = sp[0].trim();  // 左辺
-        String right = sp[1].trim();  // 右辺
+
+        // 最初の "=" で分割（"==" を避けるため、先に "==" を一時置換）
+        String temp = expr.replace("==", "\0EQ\0");
+        int eqIdx = temp.indexOf('=');
+        if (eqIdx < 0) return;
+
+        String varName = temp.substring(0, eqIdx).trim();
+        String right = temp.substring(eqIdx + 1).trim();
+
+        // "==" を復元
+        right = right.replace("\0EQ\0", "==");
+
+        if (varName.isEmpty() || right.isEmpty()) return;
 
         Map<String, Double> varMap = machine.getVariables();
         if (varMap == null) {
@@ -942,23 +945,23 @@ public class SlotMachineListener implements Listener {
         }
         // stock の置換
         replaced = replaced.replaceAll("\\bstock\\b", String.valueOf(machine.getStock()));
+        // 未解決の変数名を0に置換
+        replaced = replaced.replaceAll("\\b[a-zA-Z_][a-zA-Z0-9_]*\\b", "0");
 
         // 式をeval
         double newVal;
         try {
             newVal = ExpressionParser.eval(replaced);
         } catch (Exception ex) {
-            plugin.getLogger().warning("[applyVarCalc] error: " + ex.getMessage());
+            plugin.getLogger().warning("[applyVarCalc] error: " + expr + " => " + ex.getMessage());
             return;
         }
 
         // 左辺が "stock" なら machine.setStock((int)newVal)
         if (varName.equals("stock")) {
-            // stock を整数扱いする例
             int s = (int) newVal;
             machine.setStock(s);
         } else {
-            // 通常変数
             if (!varMap.containsKey(varName)) {
                 varMap.put(varName, 0.0);
             }

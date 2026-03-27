@@ -1,0 +1,472 @@
+{
+  // ============================================================
+  // エンダードラゴン討伐 ～竜の試練～
+  // AT「ドラゴンラッシュ」コンフィグ
+  // ============================================================
+  //
+  // 【ゲーム性】
+  // - 初期30G + 突入契機による上乗せ
+  // - 毎ゲーム上乗せ抽選あり
+  // - ドラゴンエッグ揃いで「エンダーモード」突入！
+  // - ゲーム数消化で通常へ戻る
+  //
+  // 【変数】
+  // atGame: AT残りゲーム数
+  // totalWin: 累計獲得
+  // rushStock: エンダーモードストック
+  // setCount: セット数カウント
+  // ============================================================
+
+  "reels": 3,
+  "shuffleTime": 1.8,
+  "shuffleSpeed": 0.3,
+  "spinSpeed": 1.5,
+  "spinCost": 3,
+
+  // === 変数初期化 ===
+  "variables": [
+    { "varName": "atGame", "initialValue": 30 },
+    { "varName": "totalWin", "initialValue": 0 },
+    { "varName": "rushStock", "initialValue": 0 },
+    { "varName": "setCount", "initialValue": 1 }
+  ],
+
+  // === 負け時設定 ===
+  "loseStockOperation": "add",
+  "loseStockValue": 0,
+  "loseMessage": "&8[&a&lDR&8] &f残り&e<atGame>&fG &8| &6<totalWin>&7枚 &8| &bSET<setCount>",
+
+  // === サウンド設定 ===
+  "defaultSoundSettings": {
+    "startSound": {
+      "type": "minecraft:entity.player.levelup",
+      "volume": 0.6,
+      "pitch": 1.5,
+      "radius": 12
+    },
+    "rotatingSound": {
+      "type": "minecraft:block.note_block.bell",
+      "volume": 0.4,
+      "pitch": 1.5,
+      "radius": 10
+    },
+    "reelStopSound": {
+      "type": "minecraft:block.note_block.pling",
+      "volume": 0.9,
+      "pitch": 1.2,
+      "radius": 12
+    },
+    "endLoseSound": {
+      "type": "minecraft:block.note_block.harp",
+      "volume": 0.5,
+      "pitch": 1.0,
+      "radius": 8
+    }
+  },
+
+  // === パーティクル設定 ===
+  "defaultParticleSettings": [
+    {
+      "point": "frame",
+      "particle": "END_ROD",
+      "count": 20,
+      "speed": 0.1,
+      "offset": [0.5, 0.5, 0.5]
+    },
+    {
+      "point": "button",
+      "particle": "HAPPY_VILLAGER",
+      "count": 5,
+      "speed": 0,
+      "offset": [0.3, 0.3, 0.3]
+    }
+  ],
+
+  // ============================================================
+  // グローバルイベント（毎スピン判定）
+  // ============================================================
+  "event": [
+    // --- ゲームカウント減算 ---
+    {
+      "condition": "1",
+      "varCalc": "atGame = atGame - 1"
+    },
+
+    // --- 残り10G ---
+    {
+      "condition": "atGame == 10",
+      "message": "&e  残り10G！上乗せチャンス！",
+      "eventSound": {
+        "type": "minecraft:entity.experience_orb.pickup",
+        "volume": 0.8,
+        "pitch": 0.8,
+        "radius": 15
+      }
+    },
+
+    // --- 残り5G ---
+    {
+      "condition": "atGame == 5",
+      "message": "&c&l  残り5G！",
+      "eventSound": {
+        "type": "minecraft:entity.ender_dragon.ambient",
+        "volume": 0.7,
+        "pitch": 1.2,
+        "radius": 15
+      }
+    },
+
+    // --- エンダーモードストック消化 ---
+    {
+      "condition": "rushStock >= 1 && atGame <= 0",
+      "varCalc": "rushStock = rushStock - 1; atGame = 5",
+      "message": "\n&8&m                                        \n&5&l  ★ エンダーモード突入！\n&7  5G間、超高確率上乗せ！\n&8&m                                        ",
+      "eventSound": {
+        "type": "minecraft:entity.ender_dragon.growl",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "radius": 25
+      },
+      "nextSlotOnWin": "dragon_rush/rush"
+    },
+
+    // --- 引き戻し ---
+    {
+      "condition": "atGame == 0 && rushStock == 0 && stock >= 500",
+      "varCalc": "atGame = 30; setCount = setCount + 1; stock = 0",
+      "message": "\n&8&m                                        \n&a&l  ★ 引き戻し成功！\n&f  +30G！ &bSET<setCount>&f継続！\n&8&m                                        ",
+      "eventSound": {
+        "type": "minecraft:ui.toast.challenge_complete",
+        "volume": 1.0,
+        "pitch": 1.2,
+        "radius": 20
+      }
+    },
+
+    // --- AT終了 ---
+    {
+      "condition": "atGame <= 0 && rushStock == 0",
+      "message": "\n&8&m                                        \n&7  ドラゴンラッシュ 終了\n&6  累計: &e&l<totalWin>&6枚 &8| &bSET<setCount>\n&8&m                                        ",
+      "eventSound": {
+        "type": "minecraft:entity.firework_rocket.twinkle_far",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "radius": 20
+      },
+      "nextSlotOnWin": "dragon_rush/normal"
+    }
+  ],
+
+  // ============================================================
+  // 当選パターン
+  // ============================================================
+  "patterns": [
+
+    // 【最強役】ドラゴンエッグ揃い - エンダーモード確定！
+    {
+      "probability": 1.0,
+      "items": ["DRAGON_EGG", "DRAGON_EGG", "DRAGON_EGG"],
+      "rewards": [
+        { "type": "money", "value": "300" }
+      ],
+      "winMessage": "\n&8&m                                        \n&5  &d&l★ ドラゴンエッグ揃い ★\n&a&l  エンダーモード確定！ &e+300枚\n&8&m                                        ",
+      "patternSound": {
+        "type": "minecraft:entity.ender_dragon.death",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "radius": 30
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "DRAGON_BREATH",
+          "count": 250,
+          "speed": 0.8,
+          "offset": [1.0, 1.0, 1.0]
+        },
+        {
+          "point": "frame",
+          "particle": "END_ROD",
+          "count": 100,
+          "speed": 0.5,
+          "offset": [0.5, 0.5, 0.5]
+        }
+      ],
+      "broadcastSettings": {
+        "message": "&8[&a&lDR&8] &e<player>&f が &d&lドラゴンエッグ揃い&f！エンダーモード突入！",
+        "broadcastSound": {
+          "type": "minecraft:entity.ender_dragon.growl",
+          "volume": 0.6,
+          "pitch": 1.0,
+          "radius": -2
+        }
+      },
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "rushStock = rushStock + 1; totalWin = totalWin + 300"
+        }
+      ]
+    },
+
+    // 【強役】ネザースター揃い - 大量上乗せ
+    {
+      "probability": 3.0,
+      "items": ["NETHER_STAR", "NETHER_STAR", "NETHER_STAR"],
+      "rewards": [
+        { "type": "money", "value": "100" }
+      ],
+      "winMessage": "&e&l  ネザースター揃い &a+100枚 &f- &a+20G！",
+      "patternSound": {
+        "type": "minecraft:entity.wither.spawn",
+        "volume": 0.8,
+        "pitch": 1.3,
+        "radius": 20
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "END_ROD",
+          "count": 80,
+          "speed": 0.6,
+          "offset": [0.5, 0.5, 0.5]
+        }
+      ],
+      "stockOperation": "add",
+      "stockValue": 100,
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "atGame = atGame + 20; totalWin = totalWin + 100"
+        },
+        {
+          "condition": "stock >= 300",
+          "varCalc": "rushStock = rushStock + 1; stock = 0",
+          "message": "&5&l  ★ エンダーモードストック！"
+        }
+      ]
+    },
+
+    // 【レア役】エンダーパール揃い - 上乗せ
+    {
+      "probability": 10.0,
+      "items": ["ENDER_PEARL", "ENDER_PEARL", "ENDER_PEARL"],
+      "rewards": [
+        { "type": "money", "value": "30" }
+      ],
+      "winMessage": "&d  エンダーパール揃い &a+30枚 &f- &a+5G",
+      "patternSound": {
+        "type": "minecraft:entity.enderman.teleport",
+        "volume": 0.9,
+        "pitch": 1.0,
+        "radius": 12
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "PORTAL",
+          "count": 80,
+          "speed": 0.4,
+          "offset": [0.5, 0.5, 0.5]
+        }
+      ],
+      "stockOperation": "add",
+      "stockValue": 30,
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "atGame = atGame + 5; totalWin = totalWin + 30"
+        },
+        {
+          "condition": "stock >= 150",
+          "varCalc": "atGame = atGame + 5; stock = stock - 100",
+          "message": "&a  +5G 追加上乗せ！"
+        }
+      ]
+    },
+
+    // 【強レア役】ブレイズロッド揃い
+    {
+      "probability": 7.0,
+      "items": ["BLAZE_ROD", "BLAZE_ROD", "BLAZE_ROD"],
+      "rewards": [
+        { "type": "money", "value": "50" }
+      ],
+      "winMessage": "&6  ブレイズロッド揃い &a+50枚 &e- &a+10G！",
+      "patternSound": {
+        "type": "minecraft:entity.blaze.shoot",
+        "volume": 1.0,
+        "pitch": 0.8,
+        "radius": 15
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "FLAME",
+          "count": 120,
+          "speed": 0.5,
+          "offset": [0.5, 0.5, 0.5]
+        },
+        {
+          "point": "frame",
+          "particle": "LAVA",
+          "count": 15,
+          "speed": 0,
+          "offset": [0.3, 0.3, 0.3]
+        }
+      ],
+      "stockOperation": "add",
+      "stockValue": 50,
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "atGame = atGame + 10; totalWin = totalWin + 50"
+        },
+        {
+          "condition": "stock >= 200",
+          "varCalc": "atGame = atGame + 20; stock = stock - 150",
+          "message": "&e&l  +20G 追加上乗せ！"
+        }
+      ]
+    },
+
+    // 【メイン小役】ダイヤモンド揃い
+    {
+      "probability": 25.0,
+      "items": ["DIAMOND", "DIAMOND", "DIAMOND"],
+      "rewards": [
+        { "type": "money", "value": "15" }
+      ],
+      "winMessage": "&b  ダイヤモンド揃い &a+15枚",
+      "patternSound": {
+        "type": "minecraft:entity.experience_orb.pickup",
+        "volume": 0.7,
+        "pitch": 1.5,
+        "radius": 8
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "ITEM_SNOWBALL",
+          "count": 20,
+          "speed": 0.15,
+          "offset": [0.3, 0.3, 0.3]
+        }
+      ],
+      "stockOperation": "add",
+      "stockValue": 10,
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "totalWin = totalWin + 15"
+        },
+        {
+          "condition": "stock >= 100",
+          "varCalc": "atGame = atGame + 3; stock = stock - 80",
+          "message": "&a  +3G上乗せ！"
+        }
+      ]
+    },
+
+    // 【リプレイ】エンダーアイ揃い
+    {
+      "probability": 30.0,
+      "items": ["ENDER_EYE", "ENDER_EYE", "ENDER_EYE"],
+      "rewards": [],
+      "winMessage": "&8  リプレイ",
+      "patternSound": {
+        "type": "minecraft:block.note_block.bit",
+        "volume": 0.5,
+        "pitch": 1.3,
+        "radius": 5
+      },
+      "stockOperation": "add",
+      "stockValue": 5,
+      "event": [
+        {
+          "condition": "stock >= 120",
+          "varCalc": "atGame = atGame + 2; stock = stock - 100",
+          "message": "&a  +2G上乗せ！"
+        }
+      ]
+    },
+
+    // 【チャンス目】エッグ挟み
+    {
+      "probability": 4.0,
+      "items": ["DRAGON_EGG", "ENDER_PEARL", "DRAGON_EGG"],
+      "rewards": [
+        { "type": "money", "value": "20" }
+      ],
+      "winMessage": "&d&l  チャンス目！ &a+20枚 &f- &a+10G！",
+      "patternSound": {
+        "type": "minecraft:block.note_block.chime",
+        "volume": 1.0,
+        "pitch": 2.0,
+        "radius": 12
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "ENCHANT",
+          "count": 60,
+          "speed": 0.6,
+          "offset": [0.5, 0.5, 0.5]
+        }
+      ],
+      "stockOperation": "add",
+      "stockValue": 80,
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "atGame = atGame + 10; totalWin = totalWin + 20"
+        },
+        {
+          "condition": "stock >= 200",
+          "varCalc": "atGame = atGame + 10; stock = stock - 150",
+          "message": "&e&l  +10G 追加上乗せ！"
+        }
+      ]
+    },
+
+    // 【プレミア目】オールスター
+    {
+      "probability": 0.3,
+      "items": ["NETHER_STAR", "DRAGON_EGG", "NETHER_STAR"],
+      "rewards": [
+        { "type": "money", "value": "500" }
+      ],
+      "winMessage": "\n&8&m                                        \n&e&l  ★ プレミアム役！ ★\n&a&l  +50G & エンダーモード確定！ &e+500枚\n&8&m                                        ",
+      "patternSound": {
+        "type": "minecraft:ui.toast.challenge_complete",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "radius": 30
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "TOTEM_OF_UNDYING",
+          "count": 200,
+          "speed": 1.0,
+          "offset": [1.0, 1.0, 1.0]
+        }
+      ],
+      "broadcastSettings": {
+        "message": "&8[&a&lDR&8] &6<player>&f が &e&lプレミアム役&f！大量上乗せ！",
+        "broadcastSound": {
+          "type": "minecraft:ui.toast.challenge_complete",
+          "volume": 0.5,
+          "pitch": 1.0,
+          "radius": -2
+        }
+      },
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "atGame = atGame + 50; rushStock = rushStock + 1; totalWin = totalWin + 500"
+        }
+      ]
+    }
+  ]
+}

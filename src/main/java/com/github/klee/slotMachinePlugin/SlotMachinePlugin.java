@@ -9,8 +9,6 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.time.LocalTime;
@@ -27,6 +25,7 @@ public class SlotMachinePlugin extends JavaPlugin {
     private SlotManager slotManager;
     private VaultIntegration vaultIntegration;
     private SlotDatabase slotDatabase;
+    private PluginConfig pluginConfig;
     public static SlotMachinePlugin getInstance() {
         return instance;
     }
@@ -51,7 +50,10 @@ public class SlotMachinePlugin extends JavaPlugin {
         }, 20L * 60, 20L * 60);
 
         setupVault();
-        createDefaultFolders();
+        saveDefaultResources();
+
+        pluginConfig = new PluginConfig(this);
+        pluginConfig.load();
 
         // MachineManager
         MachineManager.init(getDataFolder());
@@ -116,137 +118,33 @@ public class SlotMachinePlugin extends JavaPlugin {
         return itemConfigManager;
     }
 
-    private void createDefaultFolders() {
-        File folder = getDataFolder();
-        if (!folder.exists()) folder.mkdirs();
-
-        // slotConfigs フォルダとテンプレート
-        File slotConfigFolder = new File(folder, "slotConfigs");
-        if (!slotConfigFolder.exists()) {
-            slotConfigFolder.mkdirs();
-            createSlotConfigTemplate(slotConfigFolder);
-        }
-
-        // itemConfigs フォルダとテンプレート
-        File itemConfigFolder = new File(folder, "itemConfigs");
-        if (!itemConfigFolder.exists()) {
-            itemConfigFolder.mkdirs();
-            createItemConfigTemplate(itemConfigFolder);
-        }
+    public PluginConfig getPluginConfig() {
+        return pluginConfig;
     }
 
-    private void createSlotConfigTemplate(File folder) {
-        File template = new File(folder, "example.jsonc");
-        if (template.exists()) return;
+    private static final String[] DEFAULT_RESOURCES = {
+            "config.json",
+            "slotConfigs/template.jsonc",
+            "slotConfigs/dragon_rush/normal.jsonc",
+            "slotConfigs/dragon_rush/cz.jsonc",
+            "slotConfigs/dragon_rush/at.jsonc",
+            "slotConfigs/dragon_rush/rush.jsonc",
+            "slotConfigs/dragon_rush/README.md",
+            "slotConfigs/mining_slot/main.jsonc",
+            "slotConfigs/mining_slot/wood.jsonc",
+            "slotConfigs/mining_slot/stone.jsonc",
+            "slotConfigs/mining_slot/iron.jsonc",
+            "slotConfigs/mining_slot/diamond.jsonc",
+            "itemConfigs/items_template.jsonc"
+    };
 
-        String content = """
-{
-  // === 基本設定 ===
-  "reels": 3,                     // リール数（額縁の数）
-  "shuffleTime": 2.0,             // シャッフル時間（秒）
-  "spinCost": 100,                // 1回のコスト（お金）
-  "shuffleSpeed": 0.1,            // シャッフル速度
-  "spinSpeed": 0.3,               // 回転速度
-
-  // === アイテムコスト（お金の代わりにアイテム消費、任意） ===
-  // "itemCost": {
-  //   "name": "DIAMOND",          // アイテム名 or itemConfigsのキー
-  //   "amount": 1
-  // },
-
-  // === 負けた時の設定 ===
-  "loseStockOperation": "add",    // "add" / "set" / "sub"
-  "loseStockValue": 10,           // 負けた時にストックに加算する値
-  "loseMessage": "&c残念！ハズレです",
-
-  // === デフォルトサウンド ===
-  "defaultSoundSettings": {
-    "startSound": { "type": "minecraft:block.note_block.pling", "volume": 1.0, "pitch": 1.0, "radius": 2.0 },
-    "rotatingSound": { "type": "minecraft:block.note_block.bass", "volume": 0.5, "pitch": 1.0, "radius": 2.0 },
-    "reelStopSound": { "type": "minecraft:block.note_block.snare", "volume": 1.0, "pitch": 1.0, "radius": 2.0 },
-    "endLoseSound": { "type": "minecraft:entity.villager.no", "volume": 1.0, "pitch": 1.0, "radius": 2.0 }
-  },
-
-  // === デフォルトパーティクル ===
-  "defaultParticleSettings": [
-    { "particle": "FLAME", "count": 10, "speed": 0.1, "offset": [0.5, 0.5, 0.5], "point": "button" }
-  ],
-
-  // === 変数定義（イベント用、任意） ===
-  "variables": [
-    { "varName": "bonus", "initialValue": 0 }
-  ],
-
-  // === パターン（当選役） ===
-  "patterns": [
-    {
-      "probability": "0.01",                              // 当選確率 (1%)
-      "items": ["DIAMOND", "DIAMOND", "DIAMOND"],         // 表示アイテム
-      "rewards": [
-        { "type": "money", "value": "stock*10" },         // お金報酬（stockの10倍）
-        { "type": "item", "value": "DIAMOND", "quantity": "5" }
-      ],
-      "stockOperation": "set",
-      "stockValue": 0,
-      "winMessage": "&6&lジャックポット！",
-      "patternSound": { "type": "minecraft:ui.toast.challenge_complete", "volume": 1.0, "pitch": 1.0, "radius": 10.0 },
-      "broadcastSettings": {
-        "message": "&e{player}がジャックポットを当てました！",
-        "broadcastSound": { "type": "minecraft:entity.ender_dragon.death", "volume": 1.0, "pitch": 1.0, "radius": 50.0 }
-      },
-      "particleSettings": [
-        { "particle": "TOTEM_OF_UNDYING", "count": 100, "speed": 1.0, "offset": [1, 1, 1], "point": "player" }
-      ]
-    },
-    {
-      "probability": "0.1",                               // 当選確率 (10%)
-      "items": ["GOLD_INGOT", "GOLD_INGOT", "GOLD_INGOT"],
-      "rewards": [{ "type": "money", "value": "500" }],
-      "winMessage": "&a金の延べ棒揃い！ +500"
-    },
-    {
-      "probability": "0.2",                               // 当選確率 (20%)
-      "items": ["IRON_INGOT", "IRON_INGOT", "IRON_INGOT"],
-      "rewards": [{ "type": "money", "value": "200" }],
-      "winMessage": "&7鉄の延べ棒揃い！ +200"
-    }
-  ],
-
-  // === グローバルイベント（任意） ===
-  "event": [
-    {
-      "condition": "stock >= 1000",
-      "varCalc": "bonus = bonus + 1",
-      "message": "&eストック1000超え！ボーナスカウント: {bonus}"
-    }
-  ]
-}
-""";
-
-        try (FileWriter writer = new FileWriter(template)) {
-            writer.write(content);
-            getLogger().info("[SlotMachinePlugin] テンプレート作成: slotConfigs/example.jsonc");
-        } catch (IOException e) {
-            getLogger().warning("[SlotMachinePlugin] テンプレート作成失敗: " + e.getMessage());
-        }
-    }
-
-    private void createItemConfigTemplate(File folder) {
-        File template = new File(folder, "example.json");
-        if (template.exists()) return;
-
-        String content = """
-{
-  "exampleSword": "手に持ったアイテムで /slot itemstack を実行するとBase64文字列が出力されます",
-  "exampleArmor": "その文字列をここに貼り付けてください"
-}
-""";
-
-        try (FileWriter writer = new FileWriter(template)) {
-            writer.write(content);
-            getLogger().info("[SlotMachinePlugin] テンプレート作成: itemConfigs/example.json");
-        } catch (IOException e) {
-            getLogger().warning("[SlotMachinePlugin] テンプレート作成失敗: " + e.getMessage());
+    private void saveDefaultResources() {
+        for (String path : DEFAULT_RESOURCES) {
+            File target = new File(getDataFolder(), path);
+            if (!target.exists()) {
+                target.getParentFile().mkdirs();
+                saveResource(path, false);
+            }
         }
     }
 

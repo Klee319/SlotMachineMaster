@@ -1,0 +1,5 @@
+  {
+    "specialSword": "Base64エンコードされたItemStack文字列",
+    "rareArmor": "Base64エンコードされたItemStack文字列"
+  }
+  // /slot itemstack で手持ちアイテムのBase64を取得可能

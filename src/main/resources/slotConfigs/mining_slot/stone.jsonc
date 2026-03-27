@@ -1,0 +1,326 @@
+{
+    "reels": 3,
+    "shuffleTime": 2.5,
+    "spinCost": 400,
+    "spinSpeed": 0.8,
+    "shuffleSpeed": 1.5,
+    "loseStockOperation": "ADD",
+    "loseStockValue": 50,
+    "loseMessage": "&cハズレ...",
+    "defaultSoundSettings": {
+        "startSound": {
+            "type": "minecraft:block.note_block.pling"
+        },
+        "reelStopSound": {
+            "type": "minecraft:block.note_block.bass",
+            "volume": 1.0
+        },
+        "endLoseSound": {
+            "type": "minecraft:block.note_block.bell"
+        },
+        "rotatingSound": {
+            "type": "minecraft:block.stone.break"
+        }
+    },
+    "variables": [
+        {
+            "varName": "rotateCount",
+            "initialValue": 0
+        },
+        {
+            "varName": "HP",
+            "initialValue": 10
+        },
+        {
+            "varName": "damage",
+            "initialValue": 0
+        },
+        {
+            "varName": "propability",
+            "initialValue": 0
+        },
+        {
+            "varName": "ironCount",
+            "initialValue": 0
+        }
+    ],
+    "event": [
+        {
+            "condition": "1",
+            "varCalc": "rotateCount=rotateCount+1"
+        },
+        {
+            "condition": "rotateCount<120",
+            "varCalc": "propability=rotateCount"
+        },
+        {
+            "condition": "rotateCount%15==0 && HP<10",
+            "varCalc": "HP=HP+1",
+            "message": "&d&l時間経過によりHPが1回復した!",
+            "eventSound": {
+                "type": "minecraft:block.amethyst_cluster.fall",
+                "volume": 1.0
+              }
+        },
+        {
+            "condition":"rotateCount==1",
+            "varCalc":"ironCount=0"
+        },
+        {
+            "condition":"rotateCount==1",
+            "varCalc":"propability=0"
+        }
+    ],
+    "patterns": [
+        { //ツルハシの破壊
+            "items": [
+                "stick",
+                "stick",
+                "stick"
+            ],
+            "probability": "propability/4",//max約30
+            "winMessage": "&6&lツルハシが壊れてしまったので帰宅した!\n&e¥<profit>&eを手に入れた!",
+            "patternSound": {
+                "type": "minecraft:item.shield.break",
+                "volume": 1.0
+            },
+            "nextSlotOnWin": "mining_slot/main",
+            "event": [
+                {
+                    "condition": "1",
+                    "varCalc": "ironCount=0"
+                },
+                {
+                    "condition":"1",
+                    "varCalc":"rotateCount=0"
+                }
+            ],
+            "rewards": [
+                {
+                    "type": "money",
+                    "value": "stock"
+                }
+            ],
+            "stockOperation": "SET",
+            "stockValue": 0
+        },
+        { //石
+            "items": [
+                "stone",
+                "stone",
+                "stone"
+            ],
+            "probability": 15,
+            "winMessage": "&b石揃い! stockが100増えた!",
+            "patternSound": {
+                "type": "minecraft:entity.arrow.hit_player"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 100
+        },
+        { //花崗岩
+            "items": [
+                "granite",
+                "granite",
+                "granite"
+            ],
+            "probability": 5,
+            "winMessage": "&b花崗岩揃い! ストックが250増えた!",
+            "patternSound": {
+                "type": "minecraft:entity.arrow.hit_player"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 250
+        },
+        { //閃緑岩
+            "items": [
+                "diorite",
+                "diorite",
+                "diorite"
+            ],
+            "probability": 5,
+            "winMessage": "&b閃緑岩揃い! ストックが250増えた!",
+            "patternSound": {
+                "type": "minecraft:entity.arrow.hit_player"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 250
+        },
+        { //安山岩
+            "items": [
+                "andesite",
+                "andesite",
+                "andesite"
+            ],
+            "probability": 5,
+            "winMessage": "&b安山岩揃い! ストックが250増えた!",
+            "patternSound": {
+                "type": "minecraft:entity.arrow.hit_player"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 250
+        },
+        { //石炭
+            "items": [
+                "coal_ore",
+                "coal_ore",
+                "coal_ore"
+            ],
+            "probability": 5,
+            "winMessage": "&b石炭揃い! ストックが600増えた!",
+            "patternSound": {
+                "type": "minecraft:entity.arrow.hit_player"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 600
+        },
+        { //銅
+            "items": [
+                "copper_ore",
+                "copper_ore",
+                "copper_ore"
+            ],
+            "probability": 5,
+            "winMessage": "&b銅揃い! ストックが400増えた!",
+            "patternSound": {
+                "type": "minecraft:entity.arrow.hit_player"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 400
+        },
+        {//ラピスラズリ
+            "items": [
+                "lapis_ore",
+                "lapis_ore",
+                "lapis_ore"
+            ],
+            "probability": 3,
+            "winMessage": "&bラピスラズリ揃い! ストックが5000増えた!",
+            "patternSound": {
+                "type": "minecraft:entity.arrow.hit_player"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 5000
+        },
+        { //鉄
+            "items": [
+                "iron_ore",
+                "iron_ore",
+                "iron_ore"
+            ],
+            "probability": 10,
+            "winMessage": "&b鉄揃い! ストックが1000増えた!",
+            "patternSound": {
+                "type": "minecraft:entity.arrow.hit_player"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 1000,
+            "event": [
+                {
+                    "condition": "ironCount<3",
+                    "varCalc": "ironCount=ironCount+1"
+                },
+                {
+                    "condition": "ironCount==3",
+                    "varCalc": "rotateCount=0",
+                    "message": "&b&l鉄3つ集まった! 鉄のツルハシにアップグレードした!",
+                    "eventSound": {
+                        "type": "minecraft:entity.player.levelup",
+                        "volume": 1.0
+                    },
+                    "nextSlotOnWin": "mining_slot/iron"
+                }
+            ]
+        },
+        { //ゾンビ
+            "items": [
+                "zombie_head",
+                "zombie_head",
+                "zombie_head"
+            ],
+            "probability": 4,
+            "winMessage": "&7&lゾンビに出くわしてしまった!\n&4&l2ダメージを受けた!",
+            "patternSound": {
+                "type": "minecraft:entity.player.hurt",
+                "volume": 1.0
+            },
+            "stockOperation": "ADD",
+            "stockValue": 50,
+            "event": [
+                {
+                    "condition": "1",
+                    "varCalc": "HP=HP-2"
+                },
+                {
+                    "condition": "HP<=0",
+                    "nextSlotOnWin": "mining_slot/main",
+                    "message": "&8&l死んでしまった...",
+                    "eventSound": {
+                        "type": "minecraft:block.anvil.land"
+                    }
+                }
+            ]
+        },
+        { //スケルトン
+            "items": [
+                "skeleton_skull",
+                "skeleton_skull",
+                "skeleton_skull"
+            ],
+            "probability": 4,
+            "winMessage": "&7&lスケルトンに出くわしてしまった!\n&4&l3ダメージを受けた!",
+            "patternSound": {
+                "type": "minecraft:entity.player.hurt",
+                "volume": 1.0
+            },
+            "stockOperation": "ADD",
+            "stockValue": 50,
+            "event": [
+                {
+                    "condition": "1",
+                    "varCalc": "HP=HP-3"
+                },
+                {
+                    "condition": "HP<=0",
+                    "nextSlotOnWin": "mining_slot/main",
+                    "message": "&8&l死んでしまった...",
+                    "eventSound": {
+                        "type": "minecraft:block.anvil.land"
+                    }
+                }
+            ]
+        },
+        { //クリーパー
+            "items": [
+                "creeper_head",
+                "creeper_head",
+                "creeper_head"
+            ],
+            "probability": 5,
+            "patternSound": {
+                "type": "minecraft:entity.generic.explode"
+            },
+            "stockOperation": "ADD",
+            "stockValue": 50,
+            "event": [
+                {
+                    "condition": "1",
+                    "varCalc": "damage=1+((rotateCount+HP)%5)",
+                    "message": "&7&l背後から迫りくるクリーパーに気が付かなかった!\n&4&l<damage>ダメージを受けた!"
+                },
+                {
+                    "condition": "1",
+                    "varCalc": "HP=HP-damage"
+                },
+                {
+                    "condition": "HP<=0",
+                    "nextSlotOnWin": "mining_slot/main",
+                    "message": "&8&l死んでしまった...",
+                    "eventSound": {
+                        "type": "minecraft:block.anvil.land"
+                    }
+                }
+            ]
+        }
+    ]
+}

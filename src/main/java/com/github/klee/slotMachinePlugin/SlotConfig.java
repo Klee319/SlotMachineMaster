@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * SlotConfig: JSON設定マッピングクラス (最終リファクタリング後)
  * <p>
- * ・デフォルトサウンド設定(defultSoundSettings)は SoundParam をオブジェクト化
+ * ・デフォルトサウンド設定(defaultSoundSettings)は SoundParam をオブジェクト化
  * ・パターン内サウンド (patternSound) もオブジェクト化
  * ・ブロードキャストサウンド (broadcastSound) もオブジェクト化
  * ・EventDefinition のサウンド (eventSound) もオブジェクト化

@@ -1,0 +1,189 @@
+{
+  // スロット基本設定 
+  "reels": 3, //現状3つ揃い限定のため3で固定
+  "shuffleTime": 5.0, //スロットが回転し続けている時間
+  "spinCost": 500, //スロットの消費コイン
+  "itemCost": {
+    "name": "GOLD_INGOT",
+    "amount": 5
+  }, //スロットの消費アイテム
+  "shuffleSpeed": 1.2, //スロットの回転速度（額縁のアイテムが切り替わる時間）
+  "spinSpeed": 1.0, //スロットのアイテムが停止を始めてから終了するまでの間隔
+  "loseStockOperation": "ADD", //ハズレ時のストックの調整方式（ADD=加算、SUB=減算、SET=固定値）
+  "loseStockValue": 10, //ハズレ時のストックの調整値
+  "loseMessage": "&cハズレだよ!", //message &カラーコードや\n改行の利用が可能
+  "defaultSoundSettings": { //スロットの基本効果音
+    "startSound": { //スロットの起動音
+      "type": "minecraft:block.note_block.pling", //効果音IDID
+      "volume": 1.0, //音量（デフォルト0.5）
+      "pitch": 1.0, //音程（デフォルト1）
+      "radius": 2.0 //範囲（デフォルト10）-1で利用ユーザーのみ、-2で全ユーザー
+    },
+    "reelStopSound": { //スロットの停止音
+      "type": "minecraft:block.note_block.bass",
+      "volume": 1.0,
+      "pitch": 1.0,
+      "radius": 2.0
+    },
+    "endLoseSound": { //スロットの敗北音（パターンに一致しない）
+      "type": "minecraft:entity.player.levelup",
+      "volume": 1.0,
+      "pitch": 1.0,
+      "radius": 2.0
+    },
+    "rotatingSound": { //スロットの回転音（この項目がなしの場合デフォルトで額縁の設置音になる）
+      "type": "minecraft:block.note_block.bell",
+      "volume": 0.8, //これだけデフォルト0.3
+      "pitch": 1.0,
+      "radius": 2.0
+    }
+  },
+  "variables": [ //変数宣言
+    {
+      "varName": "var1", //変数名
+      "initialValue": 0 //初期値（初回起動時のみ参照）スロット継承時は値を引継ぎ※引継ぎ先での宣言必要
+    },
+    {
+      "varName": "var2",
+      "initialValue": 10
+    }
+  ],
+  "event": [ //スロット開始時に確認が入る
+    {
+      "condition": "var2>20",
+      "varCalc": "var2=0",
+      "message": "トップレベルEvent発動 <var2>リセット！", //変数の利用が可能
+      "rewards": [ //報酬設定
+        { //この{}が1個につき1種類の報酬設定
+          "type": "money", //item or money
+          "value": "stock*1000*var1" //金額(変数式利用可能)
+        },
+        {
+          "type": "item",
+          "value": "GOLD_INGOT", //itemID又はitemConfigで宣言した変数を用いたカスタムアイテム
+          "quantity": 5 //付与数
+        }
+      ],
+      "eventSound": {
+        "type": "minecraft:entity.experience_orb.pickup",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "radius": 5.0
+      }
+    }
+  ],
+  "defaultParticleSettings": [], //回転中のパーティクル
+  "patterns": [ //当選パターンごとの設定
+    { //この{}が1個につき1パターン
+      "probability": 50.0, //このパターンの当選確率（%）
+      "patternSound": { //このパターンが揃った時の効果音
+        "type": "minecraft:block.note_block.chime",
+        "volume": 1.0,
+        "pitch": 1.2,
+        "radius": 2.0 //聞こえる範囲（-1=スロット回した人,-2=全体）
+      },
+      "items": [
+        "DIAMOND",
+        "DIAMOND",
+        "DIAMOND"
+      ], //揃うアイテム（別ファイルitemConfigで宣言した変数を使うとカスタムアイテム利用あk脳）
+      "rewards": [ //報酬設定
+        { //この{}が1個につき1種類の報酬設定
+          "type": "money", //item or money
+          "value": "stock*1000*var1" //金額(変数式利用可能)
+        },
+        {
+          "type": "item",
+          "value": "GOLD_INGOT", //itemID又はitemConfigで宣言した変数を用いたカスタムアイテム
+          "quantity": 5 //付与数
+        }
+      ],
+      "stockOperation": "ADD", //本パターン当選時のストックの調整方式（ADD=加算、SUB=減算、SET=固定値）
+      "stockValue": 50, //本パターン当選時のストックの調整値
+      "nextSlotOnWin": "someOtherSlot", //本パターン当選時にこのスロット設定に切り替え（slotConfigからの相対パス※.json（拡張子の記述）不要）
+      "broadcastSettings": { //全体に当選を報告
+        "broadcastSound": { //報告時の効果音
+          "type": "minecraft:entity.experience_orb.pickup",
+          "volume": 1.0,
+          "pitch": 1.0,
+          "radius": -2 //-2=全体を推奨
+        },
+        "message": "&a<playerName>が <myVar> コ目の大当たり！" //報告時のメッセージ※<playerName>（ユーザー名）<slotName>（スロット名）<profit>(当選金額) <[変数名]>（変数）
+      },
+      "event": [ //変数(stockを含む)を利用したカスタマイズ設定。このパターンの時に確認が入る
+        { //この{}が1個につき1種類の条件設定
+          "condition": "myVar>=5", //論理式（+-/*%）がtrueで以下を実行。1で常時実行
+          "varCalc": "myVar=0", //変数の代入や加算stockも利用可能
+          "message": "&eイベント発生: <myVar> リセット！", //message
+          "rewards": [ //報酬設定
+            { //この{}が1個につき1種類の報酬設定
+              "type": "money", //item or money
+              "value": "stock*1000*var1" //金額(変数式利用可能)
+            },
+            {
+              "type": "item",
+              "value": "GOLD_INGOT", //itemID又はitemConfigで宣言した変数を用いたカスタムアイテム
+              "quantity": 5 //付与数
+            }
+          ],
+          "nextSlotOnWin": "",
+          "eventSound": {
+            "type": "minecraft:block.note_block.pling",
+            "volume": 1.0,
+            "pitch": 1.0,
+            "radius": 2.0
+          }
+        }
+      ],
+      "particleSettings": [ //当選時のパーティクル演出
+        {
+          "particle": "REDSTONE", //パーティクルIDID
+          "count": 10, //個数
+          "speed": 0.1, //広がり速度
+          "offset": [ //拡散範囲
+            0.2, //横
+            0.5, //上
+            0.2 //正面
+          ], //マシンからのずれ
+          "color": [
+            1.0,
+            0.0,
+            0.0
+          ] //DUSTの時のみ利用可能
+        }
+      ]
+    },
+    {
+      "probability": 50.0,
+      "patternSound": {
+        "type": "minecraft:block.note_block.pling",
+        "volume": 1.0,
+        "pitch": 1.5,
+        "radius": 0.0
+      },
+      "items": [
+        "EMERALD",
+        "EMERALD",
+        "EMERALD"
+      ],
+      "rewards": [
+        {
+          "type": "money",
+          "value": "stock*2"
+        }
+      ],
+      "stockOperation": "SUB",
+      "stockValue": 20,
+      "winMessage": "&6&lツルハシが壊れてしまったので帰宅した!\n&e¥<profit>&eを手に入れた!", //<profit>で当選金額
+      "broadcastSettings": {
+        "broadcastSound": {
+          "type": "minecraft:block.note_block.xylophone",
+          "volume": 1.0,
+          "pitch": 2.0,
+          "radius": 10.0
+        },
+        "message": "&b<playerName>がエメラルド当たり！"
+      }
+    }
+  ]
+}

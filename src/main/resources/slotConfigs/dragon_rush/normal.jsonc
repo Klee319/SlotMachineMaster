@@ -1,0 +1,386 @@
+{
+  // ============================================================
+  // エンダードラゴン討伐 ～竜の試練～
+  // 通常時コンフィグ (AT/ART機)
+  // ============================================================
+  //
+  // 【変数説明】
+  // gameCount: 通常時ゲーム数（天井カウンター）
+  // highMode: 高確率モード (0=低確, 1=高確)
+  // czStock: CZストック数
+  // atStock: ATストック数
+  // totalWin: 累計獲得枚数
+  //
+  // 【天井】999Gで強制AT突入
+  // ============================================================
+
+  "reels": 3,
+  "shuffleTime": 2.5,
+  "shuffleSpeed": 0.48,
+  "spinSpeed": 2.1,
+  "spinCost": 3,
+
+  // === 変数初期化 ===
+  "variables": [
+    { "varName": "gameCount", "initialValue": 0 },
+    { "varName": "highMode", "initialValue": 0 },
+    { "varName": "czStock", "initialValue": 0 },
+    { "varName": "atStock", "initialValue": 0 },
+    { "varName": "totalWin", "initialValue": 0 }
+  ],
+
+  // === 負け時設定 ===
+  "loseStockOperation": "add",
+  "loseStockValue": 1,
+  "loseMessage": "&8[&6竜の試練&8] &7通常 &f<gameCount>&7G",
+
+  // === サウンド設定 ===
+  "defaultSoundSettings": {
+    "startSound": {
+      "type": "minecraft:block.note_block.hat",
+      "volume": 0.8,
+      "pitch": 1.2,
+      "radius": 10
+    },
+    "rotatingSound": {
+      "type": "minecraft:block.note_block.snare",
+      "volume": 0.3,
+      "pitch": 1.5,
+      "radius": 8
+    },
+    "reelStopSound": {
+      "type": "minecraft:block.note_block.bass",
+      "volume": 0.9,
+      "pitch": 0.8,
+      "radius": 10
+    },
+    "endLoseSound": {
+      "type": "minecraft:block.note_block.didgeridoo",
+      "volume": 0.6,
+      "pitch": 0.5,
+      "radius": 8
+    }
+  },
+
+  // === パーティクル設定 ===
+  "defaultParticleSettings": [
+    {
+      "point": "button",
+      "particle": "END_ROD",
+      "count": 5,
+      "speed": 0.05,
+      "offset": [0.3, 0.3, 0.3]
+    }
+  ],
+
+  // ============================================================
+  // グローバルイベント（毎スピン判定）
+  // ============================================================
+  "event": [
+    // --- ゲームカウント加算 ---
+    {
+      "condition": "1",
+      "varCalc": "gameCount = gameCount + 1"
+    },
+
+    // --- 天井到達！AT確定 ---
+    {
+      "condition": "gameCount >= 999",
+      "varCalc": "atStock = atStock + 1; gameCount = 0",
+      "message": "\n&8&m                                        \n&6&l  ★ 天井到達！ &e&l999G\n&a&l  >> ドラゴンラッシュ確定！\n&8&m                                        ",
+      "eventSound": {
+        "type": "minecraft:ui.toast.challenge_complete",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "radius": 20
+      },
+      "nextSlotOnWin": "dragon_rush/at"
+    },
+
+    // --- ATストック消化 → AT突入 ---
+    {
+      "condition": "atStock >= 1",
+      "varCalc": "atStock = atStock - 1; gameCount = 0",
+      "message": "\n&8&m                                        \n&a&l  >> ドラゴンラッシュ突入！\n&8&m                                        ",
+      "nextSlotOnWin": "dragon_rush/at"
+    },
+
+    // --- CZストック消化 → CZ突入 ---
+    {
+      "condition": "czStock >= 1 && atStock == 0",
+      "varCalc": "czStock = czStock - 1",
+      "message": "\n&8&m                                        \n&5&l  竜の試練 &d開幕！\n&7  10G以内にドラゴンを討て！\n&8&m                                        ",
+      "eventSound": {
+        "type": "minecraft:entity.ender_dragon.growl",
+        "volume": 0.8,
+        "pitch": 1.2,
+        "radius": 15
+      },
+      "nextSlotOnWin": "dragon_rush/cz"
+    },
+
+    // --- 高確転落 ---
+    {
+      "condition": "highMode == 1 && stock % 50 == 0",
+      "varCalc": "highMode = 0",
+      "message": "&8(高確終了)"
+    }
+  ],
+
+  // ============================================================
+  // 当選パターン
+  // ============================================================
+  "patterns": [
+
+    // 【確定役】ドラゴンエッグ揃い - AT直撃確定！
+    {
+      "probability": 0.02,
+      "items": ["DRAGON_EGG", "DRAGON_EGG", "DRAGON_EGG"],
+      "rewards": [
+        { "type": "money", "value": "500" }
+      ],
+      "stockOperation": "set",
+      "stockValue": 0,
+      "winMessage": "\n&8&m                                        \n&5  &d&l★ ドラゴンエッグ揃い ★\n&a&l  AT確定！ &e+500枚\n&8&m                                        ",
+      "patternSound": {
+        "type": "minecraft:entity.ender_dragon.death",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "radius": 30
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "DRAGON_BREATH",
+          "count": 200,
+          "speed": 0.3,
+          "offset": [1.0, 1.0, 1.0]
+        }
+      ],
+      "broadcastSettings": {
+        "message": "&8[&5竜の試練&8] &e<player>&f が &d&lドラゴンエッグ揃い&f でAT確定！",
+        "broadcastSound": {
+          "type": "minecraft:entity.ender_dragon.growl",
+          "volume": 0.5,
+          "pitch": 1.0,
+          "radius": -2
+        }
+      },
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "atStock = atStock + 1; gameCount = 0"
+        }
+      ]
+    },
+
+    // 【プレミア役】ネザースター揃い - AT + エンダーモード確定
+    {
+      "probability": 0.1,
+      "items": ["NETHER_STAR", "NETHER_STAR", "NETHER_STAR"],
+      "rewards": [
+        { "type": "money", "value": "300" }
+      ],
+      "winMessage": "\n&8&m                                        \n&e  &f&l★ ネザースター揃い ★\n&a&l  エンダーモード付きAT確定！ &e+300枚\n&8&m                                        ",
+      "patternSound": {
+        "type": "minecraft:entity.wither.spawn",
+        "volume": 1.0,
+        "pitch": 1.2,
+        "radius": 25
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "END_ROD",
+          "count": 100,
+          "speed": 0.5,
+          "offset": [0.5, 0.5, 0.5]
+        }
+      ],
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "atStock = atStock + 2; gameCount = 0"
+        }
+      ]
+    },
+
+    // 【レア役】エンダーパール揃い - CZ抽選
+    {
+      "probability": 3.0,
+      "items": ["ENDER_PEARL", "ENDER_PEARL", "ENDER_PEARL"],
+      "rewards": [
+        { "type": "money", "value": "15" }
+      ],
+      "stockOperation": "add",
+      "stockValue": 30,
+      "winMessage": "&d  エンダーパール揃い &a+15枚 &7- CZ当選！",
+      "patternSound": {
+        "type": "minecraft:entity.enderman.teleport",
+        "volume": 0.9,
+        "pitch": 1.0,
+        "radius": 12
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "PORTAL",
+          "count": 80,
+          "speed": 0.5,
+          "offset": [0.5, 0.5, 0.5]
+        }
+      ],
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "czStock = czStock + 1"
+        }
+      ]
+    },
+
+    // 【強レア役】ブレイズロッド揃い - CZ確定+高確移行
+    {
+      "probability": 1.5,
+      "items": ["BLAZE_ROD", "BLAZE_ROD", "BLAZE_ROD"],
+      "rewards": [
+        { "type": "money", "value": "20" }
+      ],
+      "stockOperation": "add",
+      "stockValue": 50,
+      "winMessage": "&6  ブレイズロッド揃い &a+20枚 &e- CZ確定&高確移行！",
+      "patternSound": {
+        "type": "minecraft:entity.blaze.shoot",
+        "volume": 1.0,
+        "pitch": 0.8,
+        "radius": 15
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "FLAME",
+          "count": 100,
+          "speed": 0.3,
+          "offset": [0.5, 0.5, 0.5]
+        },
+        {
+          "point": "frame",
+          "particle": "LAVA",
+          "count": 20,
+          "speed": 0,
+          "offset": [0.3, 0.3, 0.3]
+        }
+      ],
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "czStock = czStock + 1; highMode = 1"
+        }
+      ]
+    },
+
+    // 【メイン小役】ダイヤモンド揃い
+    {
+      "probability": 15.0,
+      "items": ["DIAMOND", "DIAMOND", "DIAMOND"],
+      "rewards": [
+        { "type": "money", "value": "8" }
+      ],
+      "stockOperation": "add",
+      "stockValue": 5,
+      "winMessage": "&b  ダイヤモンド揃い &a+8枚",
+      "patternSound": {
+        "type": "minecraft:block.amethyst_block.chime",
+        "volume": 0.8,
+        "pitch": 1.5,
+        "radius": 8
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "ITEM_SNOWBALL",
+          "count": 15,
+          "speed": 0.1,
+          "offset": [0.3, 0.3, 0.3]
+        }
+      ]
+    },
+
+    // 【リプレイ】エンダーアイ揃い
+    {
+      "probability": 20.0,
+      "items": ["ENDER_EYE", "ENDER_EYE", "ENDER_EYE"],
+      "rewards": [],
+      "stockOperation": "add",
+      "stockValue": 2,
+      "winMessage": "&8  リプレイ",
+      "patternSound": {
+        "type": "minecraft:entity.enderman.ambient",
+        "volume": 0.5,
+        "pitch": 1.2,
+        "radius": 5
+      }
+    },
+
+    // 【チャンス目】CZ確定+高確
+    {
+      "probability": 2.0,
+      "items": ["DRAGON_EGG", "ENDER_PEARL", "DRAGON_EGG"],
+      "rewards": [
+        { "type": "money", "value": "5" }
+      ],
+      "stockOperation": "add",
+      "stockValue": 20,
+      "winMessage": "&d&l  チャンス目！ &a+5枚 &e- CZ確定&高確移行！",
+      "patternSound": {
+        "type": "minecraft:block.note_block.chime",
+        "volume": 0.9,
+        "pitch": 2.0,
+        "radius": 10
+      },
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "czStock = czStock + 1; highMode = 1"
+        }
+      ]
+    },
+
+    // 【リーチ目】CZ確定+AT抽選
+    {
+      "probability": 1.0,
+      "items": ["NETHER_STAR", "DRAGON_EGG", "NETHER_STAR"],
+      "rewards": [
+        { "type": "money", "value": "10" }
+      ],
+      "stockOperation": "add",
+      "stockValue": 40,
+      "winMessage": "&e&l  リーチ目！ &a+10枚 &c- CZ確定！",
+      "patternSound": {
+        "type": "minecraft:ambient.cave",
+        "volume": 1.0,
+        "pitch": 0.5,
+        "radius": 15
+      },
+      "particleSettings": [
+        {
+          "point": "frame",
+          "particle": "WITCH",
+          "count": 50,
+          "speed": 0.2,
+          "offset": [0.5, 0.5, 0.5]
+        }
+      ],
+      "event": [
+        {
+          "condition": "1",
+          "varCalc": "czStock = czStock + 1"
+        },
+        {
+          "condition": "stock >= 200",
+          "varCalc": "atStock = atStock + 1",
+          "message": "&a&l  >> AT当選！"
+        }
+      ]
+    }
+  ]
+}
